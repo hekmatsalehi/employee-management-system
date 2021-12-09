@@ -1,23 +1,23 @@
-INSERT INTO department (name)
-VALUES ("Cyber Security"),
-       ("UI/UX"),
-       ("Web Design"),
-       ("Data Science"),
-       ("Human Resources");
+INSERT INTO department (department_name)
+VALUES ('Web Development'),
+       ('Data Science'),
+       ('Cyber Security'),
+       ('Finance'),
+       ('Human Resource');
 
 
 INSERT INTO role (title, salary, department_id)
-VALUES ("Cyber Engineer", 9000.00, 2),
-       ("Designer", 70000.00, 1),
-       ("Developer", 85000.00, 3),
-       ("Scientest", 70000.00, 4),
-       ("HR Manager", 50000.00, 5);
+VALUES ('Software Developer', 90000, 1),
+       ('Data Scientist', 70000, 2),
+       ('Security Engineer', 85000, 3),
+       ('Finance Manager', 70000, 4),
+       ('HR Manager', 50000, 5);
 
 INSERT INTO employee (first_name, last_name, role_id, manager_id)
-VALUES ("Younus", "Khan", 1, 5),
-       ("Alex", "Sha", 2, 4),
-       ("Jhon", "Rambo", 3, 3),
-       ("Kapal", "Sharma", 4, 2),
-       ("Anil", "Silva", 5, 1);
+VALUES ('Ahmad', 'Shah', 1, NUlL),
+       ('Wahid', 'Fana', 2, NULL),
+       ('Tom', 'Sharma', 3, 1),
+       ('Sara', 'Ali', 4, 2),
+       ('Ashraf', 'Perwiz', 5, 1);
 
 
