@@ -1,32 +1,3 @@
-// When View All Department is selected
-    // Show table with Dept name and Dept ids
-// When View All Role is selected
-    // Show table with job title, role id, 
-    // the department that role belongs to, 
-    // and the salary for that role
-// When View All Employees is selected
-    // Show table with employee data, including employee ids,
-    // first names, last names, job titles, departments, 
-    // salaries, and managers that the employees report to
-// When Add Department is selected
-    // Prompt for name of the department and
-    // Add that department to the database
-
-// When Add Role is Selected
-    // Prompt to enter the name, salary,
-    // and department for the role
-    // and Add that role to database
-
-// When Add an Employee is selected
-    // Prompt to enter employee's first name,
-    // last name, role, and manager and 
-    // add that employee to the database
-// When Update Employee Role is selected
-    // Prompt to select an employee to update
-    // and update their new role and 
-    // add this information to the database
-
-
 
 const inquirer = require('inquirer');
 const mysql = require('mysql2');
@@ -83,8 +54,15 @@ const addRolePrompt = [
         type: 'list',
         message: 'Which department does the role belong to?',
         name: 'deptChoice',
-        choices:['Web Development', 'Data Science', 'Cyber Security', 'Finance', 'Human Resource']
-    }
+        choices:['Managment', 'Web Development', 'Data Science', 'Cyber Security', 'Finance', 'Human Resource']
+    },
+    {
+        type: 'list',
+        message: 'Choose the department Id!\nManagement = 1\nWeb Development = 2\nData Science = 3\nCyber Security = 4\nFinance = 5\nHuman Resource = 6',                                  
+        name: 'deptIdChoice',
+        choices:['1', '2', '3', '4', '5', '6']
+    },
+
 ]
 
 const addEmployeePrompt = [
@@ -102,13 +80,13 @@ const addEmployeePrompt = [
         type: 'list',
         message: 'What is the employee\'s role?',
         name: 'employeeRoleChoice',
-        choices:['Software Developer', 'Data Scientist', 'Security Engineer', 'Finance Manager', 'HR Manager']
+        choices:['Manager', 'Software Developer', 'Data Scientist', 'Security Engineer', 'Finance Manager', 'HR Manager']
     },
     {
         type: 'list',
         message: 'Who is the employee\'s manager?',
         name: 'employeeManagerChoice',
-        choices:['None','Younus Khan', 'Mike Sha', 'Bob Walmer', 'Wasim Vira', 'Merry Smith']
+        choices:['None','Zamir Bena']
     },
 ]
 
@@ -117,8 +95,14 @@ const updateEmpRole = [
         type: 'list',
         message: 'Which employee\'s role would you like to update?',
         name: 'updateEmpRoleChoice',
-        choices:['Ahmad Shah','Wahid Fana', 'Tom Sharma', 'Sara Ali', 'Virat Sharma', 'Ashraf Perwiz']
+        choices:['None', 'Zamir Bena','Ahmad Shah','Wahid Fana', 'Tom Sharma', 'Sara Ali', 'Virat Sharma', 'Ashraf Perwiz']
     },
+    {
+        type: 'list',
+        message: 'Choose the employee\'s new role!',
+        name: 'newRole',
+        choices:['Manager', 'Software Developer', 'Data Scientist', 'Security Engineer', 'Finance Manager', 'HR Manager']
+    }
 ]
 
 
@@ -128,45 +112,56 @@ inquirer
     .prompt(toDoPrompt)
     .then( (choice) => {
         if(choice.toDo == 'View All Department'){
-             db.query('SELECT * FROM department', (err, resluts) => {
+            db.query('SELECT * FROM department', (err, resluts) => {
             if (err) throw err;
             console.table(resluts);
             renderTodoPrompt();
             });    
         }
-        if (choice.toDo == 'View All Role'){
-            db.query(`SELECT title, role_id, department_name, salary 
-            FROM role JOIN department ON role.department_id = department.id
-            JOIN employee ON role.id = employee.role_id`, (err, resluts) => {
+        if (choice.toDo == 'View All Role') {
+            db.query(`SELECT role.id AS id, title,  department_name, salary 
+            FROM role LEFT JOIN department ON role.department_id = department.id
+            LEFT JOIN employee ON role.id = employee.role_id`,
+            (err, resluts) => {
             if (err) throw err;
             console.table(resluts);
             renderTodoPrompt();
             });
         }
             
-        if (choice.toDo == 'View All Employees'){
-            // Note: Add the manager's name from the Terminal
-            db.query(`SELECT role.id, first_name, 
-            last_name, title, department_name, salary
-            FROM role JOIN department ON role.department_id = department.id
-            JOIN employee ON role.id = employee.role_id`, (err, resluts) => {
+        if (choice.toDo == 'View All Employees') {
+            db.query(`SELECT role.id, e.first_name, e.last_name,
+            role.title, d.department_name, role.salary,
+            CONCAT(em.first_name, ' ' , em.last_name) AS 'manager' 
+            FROM employee e
+            JOIN role on e.role_id = role.id
+            JOIN department d on role.department_id = d.id
+            LEFT JOIN employee em on e.manager_id = em.id;`, (err, resluts) => {
             if (err) throw err;
             console.table(resluts);
             renderTodoPrompt();
             });
         }
-
         if (choice.toDo == 'Add Department'){
             renderAddDeptPrompt();
         }
 
         if (choice.toDo == 'Add Role'){
             renderAddRolePrompt();
+            
+        }
+        if (choice.toDo == 'Add an Employee'){
+            renderAddEmployeePrompt();
         }
 
+        if (choice.toDo == 'Update Employee Role'){
+            renderUpdatEmpPrompt();
+        }
 
-
-
+        if (choice.toDo == 'Quit'){
+            db.end()
+            console.log('Good Bye!')
+        }
     })
   
 }
@@ -183,7 +178,6 @@ const renderAddDeptPrompt = () => {
             if (err) throw err;
             })
             console.log("Department is added to the database!")
-
         } else{
             console.log("No department was entered!")
         }
@@ -191,25 +185,69 @@ const renderAddDeptPrompt = () => {
         })    
 }
 
+
+
 const renderAddRolePrompt = () => {
-    inquirer
-    .prompt(addRolePrompt)
-        .then((userInput) => {
+    db.query(`SELECT * FROM department`, (err, res) => {
+        if (err) throw err
+    inquirer.prompt(addRolePrompt)
+    .then((userInput) => {
+        const department_id = userInput.deptIdChoice
         if (userInput.roleName) {
-            const sql = `INSERT INTO role (title, salary)
-            Value(?,?)`
-            const prams = [userInput.roleName, userInput.roleSalary] 
+            const sql = `INSERT INTO role (title, salary, department_id)
+            Value(?, ?, ?)`
+            const prams = [userInput.roleName, userInput.roleSalary, department_id] 
             db.query(sql,prams , (err, resluts) => {
             if (err) throw err;
             })
             console.log("Role is added to the database!")
-
         } else{
             console.log("No Role was entered!")
         }
         renderTodoPrompt();
-        })    
+        })
+    })    
 }
 
+
+
+const renderAddEmployeePrompt = () => {
+   
+    inquirer.prompt(addEmployeePrompt)
+    .then((userInput) => {
+
+        if (userInput.firstName) {
+            const sql = `INSERT INTO employee (first_name, last_name)
+            Value(?, ?)`
+            const prams = [userInput.firstName, userInput.lastName] 
+            db.query(sql,prams , (err, resluts) => {
+            if (err) throw err;
+            })
+            console.log("Employee is added to the database!")
+
+        } else{
+            console.log("No employee was entered!")
+        }
+        renderTodoPrompt();
+        })
+       
+}
+
+const renderUpdatEmpPrompt = () => {
+   
+    inquirer.prompt(updateEmpRole)
+    .then((userInput) => {
+
+        if (userInput.updateEmpRoleChoice !== 'None') {
+           
+            console.log("Employee Role has been updated!")
+
+        } else {
+            console.log("No employee was selected!")
+        }
+        renderTodoPrompt();
+        })
+       
+}
 
 renderTodoPrompt()
